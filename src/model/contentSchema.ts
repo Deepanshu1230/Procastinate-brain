@@ -3,7 +3,7 @@ import { Schema,model } from "mongoose";
 
 
 const contentSchema=new Schema({
-
+   
     type:{
         type:String,
     },
@@ -32,8 +32,15 @@ const contentSchema=new Schema({
     },
 
 
+   
+        
 
-});
+
+
+
+}, {
+        timestamps:true
+    });
 
 
 export const ContentModel=model("Content",contentSchema);

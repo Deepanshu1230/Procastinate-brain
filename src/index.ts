@@ -1,6 +1,7 @@
 import express from "express";
 import { ZodError } from "zod";
 import {ConnectDb} from "./db/db";
+import dotenv from 'dotenv';
 import bcrypt from "bcrypt";
 import  jwt  from "jsonwebtoken";
 import { Usermodel } from "./model/userSchema";
@@ -8,11 +9,17 @@ import { signupSchema } from "./zodSchema/signupSchema";
 import {JWT_SECRET} from "./config/config";
 import {Usermiddleware} from "./middleware/middleware";
 import {ContentModel} from "./model/contentSchema";
+import {random} from "./utils/utils";
+import {LinkModel} from "./model/linkSchema";
+import {PORT} from "./config/config";
+import cors from "cors";
 const app = express();
 
 
 
 app.use(express.json());
+app.use(cors());
+dotenv.config();
 
 app.post("/api/v1/signup", async (req, res) => {
 
@@ -22,6 +29,7 @@ app.post("/api/v1/signup", async (req, res) => {
      const password=req.body.password;
   try {
     //zod validation and password hash
+    console.log(req.body);
     signupSchema.parse({ firstName:firstName,lastName:lastName, emailId:emailId,password:password }); //zod validartion
     
 
@@ -37,11 +45,10 @@ app.post("/api/v1/signup", async (req, res) => {
       message: "User Signup Succesfully",
     });
   } catch (err) {
-    if (err instanceof ZodError) {
-      res.status(400).json({ error: err.errors });
-    }
+    
 
-    res.status(500).json({ error: String(err) });
+    res.status(500).json({ message: String(err) });
+    // console.log(err);
 
   }
 });
@@ -79,11 +86,42 @@ app.post("/api/v1/login",async  (req, res) => {
     
     catch(err){
        if (err instanceof Error) {
-    res.status(400).send("ERROR: " + err.message);
+    res.status(400).json({message: err.message});
   } else {
-    res.status(400).send("ERROR: " + String(err));
+    res.status(400).json({message: String(err)});
   }
       
+
+     }
+
+     
+
+
+});
+
+
+app.post("/api/v1/logout",async  (req, res) => {
+    
+      
+     try{
+
+
+          await res.cookie("token",null,{expires:new Date(Date.now())})
+           res.send("Logout Succesfully");
+       
+      
+
+
+          
+        }
+
+
+
+
+      
+    
+    catch(err){
+       
 
      }
 
@@ -103,13 +141,15 @@ app.post("/api/v1/content",Usermiddleware,async (req, res) => {
      const link=req.body.link;
      const type=req.body.type;
      const title=req.body.title;
+     
 
     await ContentModel.create({
       link,
       type,
       title,
       userId:(req as any).userId,
-      tags:[]
+      tags:[],
+      
      });
 
 
@@ -158,19 +198,84 @@ app.get("/api/v1/content",Usermiddleware,async (req, res) => {
       
 
 
-app.post("/api/v1/brain/share", (req, res) => {
-     
-});
-
-app.delete("/api/v1/content",Usermiddleware, async (req, res) => {
+app.post("/api/v1/brain/share",Usermiddleware,async (req, res) => {
 
   try{
 
-    const contentId=req.body.contentId;
+  const userId=(req as any).userId;
+  const {share}=req.body;
+
+
+  if(share){
+      
+
+      const existingUser=await LinkModel.findOne({
+        userId:userId
+      })
+
+      if(existingUser){
+        res.json({
+          hash:existingUser.hash
+        })
+        return;
+      }
+  
+    const hash=random(10);
+    
+   await LinkModel.create({
+      userId:userId,
+      hash:hash
+      
+  })
+
+
+    res.json({
+      message:hash 
+    })
+
+  }
+
+  else{
+    await LinkModel.deleteOne({
+      userId:userId
+    })
+
+    res.json({
+      message:"Link deleted"
+    })
+     
+
+
+  }
+  
+
+ 
+
+
+
+  }
+  catch(err){
+
+    res.status(400).send(String(err));
+  }
+
+ 
+
+  
+     
+});
+
+app.delete("/api/v1/content/:id",Usermiddleware, async (req, res) => {
+
+  try{
+
+    const contentId=req.params.id;
     const userId=(req as any).userId;
 
+    
+
   await ContentModel.deleteOne({
-    contentId,
+    _id:contentId,
     userId:userId
     
   })
@@ -194,15 +299,72 @@ app.delete("/api/v1/content",Usermiddleware, async (req, res) => {
 
 });
 
-app.get("/api/v1/brain/:sharelink", (req, res) => {});
+app.get("/api/v1/brain/:sharelink",async (req, res) => {
+
+  try{
+
+    const hash=req.params.sharelink;
+
+  const link=await LinkModel.findOne({
+    hash
+
+
+  })
+
+  if(!link){
+    res.status(411).json({
+      message:"Unable to create a Request"
+    })
+
+    return;
+  }
+
+  const content =await ContentModel.find({
+    userId:link.userId
+  })
+
+  //username
+
+  const user=await Usermodel.findOne({
+    _id:link.userId
+
+  })
+
+  if(!user){
+    res.status(411).json({
+      message:"Dont no why unable to get user"
+    })
+
+    return ;
+
+  }
+
+  res.json({
+    username:user.emailId,
+    content
+  })
+
+
+  }
+  catch(err){
+    res.status(400).json({
+      Error:String(err)
+    })
+
+  }
+
+  
+
+
+});
 
 
 
 
 ConnectDb().then(()=>{
     console.log("Database Connection Establised");
-    app.listen(3000,()=>{
-        console.log("Listening on port 300")
+    app.listen(PORT,()=>{
+        console.log("Listening on port " + `${PORT}`)
     });
 }).catch((err)=>{
     console.log("Enable to connect to the database",err);
