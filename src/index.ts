@@ -13,11 +13,14 @@ import {random} from "./utils/utils";
 import {LinkModel} from "./model/linkSchema";
 import {PORT} from "./config/config";
 import cors from "cors";
+
+
 const app = express();
 
 
 
 app.use(express.json());
+
 app.use(cors());
 dotenv.config();
 
@@ -100,27 +103,32 @@ app.post("/api/v1/login",async  (req, res) => {
 });
 
 
-app.post("/api/v1/logout",async  (req, res) => {
+app.post("/api/v1/logout", (req, res)=>{
     
       
      try{
 
 
-          await res.cookie("token",null,{expires:new Date(Date.now())})
-           res.send("Logout Succesfully");
-       
+          const token=req.headers.authorization;
+
+
+          
+
+
+          res.json({
+            message:"Logout Succesfull"
+          })
       
 
 
           
-        }
-
-
-
-
-      
+     }
     
     catch(err){
+
+      res.json({
+        message:String(err)
+      })
        
 
      }
@@ -230,7 +238,7 @@ app.post("/api/v1/brain/share",Usermiddleware,async (req, res) => {
 
 
     res.json({
-      message:hash 
+      hash 
     })
 
   }
@@ -340,7 +348,7 @@ app.get("/api/v1/brain/:sharelink",async (req, res) => {
   }
 
   res.json({
-    username:user.emailId,
+    username:user.firstName,
     content
   })
 
