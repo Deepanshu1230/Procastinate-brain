@@ -30,7 +30,7 @@ const app = (0, express_1.default)();
 dotenv_1.default.config();
 app.use(express_1.default.json());
 app.use((0, cors_1.default)({
-    origin: "https://brainly0.netlify.app",
+    origin: ["https://brainly0.netlify.app", "http://localhost:5173"],
     credentials: true,
 }));
 app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
