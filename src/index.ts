@@ -26,12 +26,7 @@ app.use(cors({
 }));
 
 
-app.get("/",(req,res)=>{
-  res.send({
-    activeStatus:true,
-    error:false,
-  })
-})
+
 
 
 app.post("/api/v1/signup", async (req, res) => {
