@@ -18,7 +18,9 @@ const app = express();
 
 app.use(express.json());
 
-app.use(cors());
+app.use(cors({
+  origin:["https://brainly0.netlify.app/"]
+}));
 dotenv.config();
 
 app.post("/api/v1/signup", async (req, res) => {
