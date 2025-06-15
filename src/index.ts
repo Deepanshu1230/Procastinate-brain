@@ -15,16 +15,20 @@ import { PORT } from "./config/config";
 import cors from "cors";
 
 const app = express();
+dotenv.config();
 
 app.use(express.json());
 
-app.use(cors({
-  origin:"https://brainly0.netlify.app",
-  credentials:true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
-dotenv.config();
+const corsOptions = {
+  origin: "https://brainly0.netlify.app",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+};
+
+app.use(cors(corsOptions));           // Apply CORS to all routes
+app.options("*", cors(corsOptions)); 
+
 
 app.post("/api/v1/signup", async (req, res) => {
   const firstName = req.body.firstName;
@@ -262,11 +266,10 @@ app.get("/api/v1/brain/:sharelink", async (req, res) => {
 
 ConnectDb()
   .then(() => {
-    console.log("Database Connection Establised");
-    app.listen(PORT, () => {
-      console.log("Listening on port " + `${PORT}`);
-    });
+    console.log("Database Connection Established");
   })
   .catch((err) => {
-    console.log("Enable to connect to the database", err);
+    console.log("Unable to connect to the database", err);
   });
+
+  export default app;
